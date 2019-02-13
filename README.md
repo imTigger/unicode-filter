@@ -64,9 +64,9 @@ echo UnicodeFilter::whitelist("Hello 您好 こんにちは 안녕하세요 ส�
 ```
 
 - Allow most characters in English, Chinese, Japanese, Korean, Thai and also [General Punctuation](https://www.compart.com/en/unicode/block/U+2000) 
-  and in additional allow 😃 character
-  but not allow characters in range U+2000..U+200F and U+205F..U+206F (Unprintable characters)
-  replace other characters as underscore
+    and an additional 😃 character
+    but not allow characters in range U+2000..U+200F and U+205F..U+206F (Unprintable characters)
+    and finally replace any other characters with underscore
 ```php
 echo UnicodeFilter::whitelist("‷Hello×您好×こんにちは×안녕하세요×สวัสดีค่ะ‴ 😃", [
     UnicodeFilter::BASIC_LATIN,
@@ -81,12 +81,12 @@ echo UnicodeFilter::whitelist("‷Hello×您好×こんにちは×안녕하세�
 ], [
     [0x2000, 0x200F],
     [0x205F, 0x206F]
-], "?");
+], "_");
 
 // ‷Hello_您好_こんにちは_안녕하세요_สวัสดีค่ะ‴ 😃
 ```
 
-- Generate analysis of each characters' codepoint and block
+- Generate analysis of string, output array of characters' detail (codepoint and block)
 
 `analysis($string)`
 
@@ -105,7 +105,7 @@ array(14) {
 }
 ```
 
-- Generate info of how whitelist/blacklist is executed and it's results
+- Generate info of how whitelist/blacklist is processed and it's results
 
 `whitelistInfo($input, $filters = [], $excepts = [], $replacement = '')`
 
