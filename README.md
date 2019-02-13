@@ -103,9 +103,9 @@ array(14) {
 
 - Generate info of how whitelist/blacklist is executed and it's results
 
-`whitelistInfo($input, $filters = [], $excepts = [])`
+`whitelistInfo($input, $filters = [], $excepts = [], $replacement = '')`
 
-`blacklistInfo($input, $filters = [], $excepts = [])`
+`blacklistInfo($input, $filters = [], $excepts = [], $replacement = '')`
 
 ```
 array(6) {
@@ -126,9 +126,9 @@ array(6) {
 
 ## Debug Functions
 
-`dumpWhitelistInfo($input, $filters = [], $excepts = [])`
+`dumpWhitelistInfo($input, $filters = [], $excepts = [], $replacement = '')`
 
-`dumpBlacklistInfo($input, $filters = [], $excepts = [])`
+`dumpBlacklistInfo($input, $filters = [], $excepts = [], $replacement = '')`
 
 ```php
 echo UnicodeFilter::dumpWhitelistInfo("Hello 您好", [
