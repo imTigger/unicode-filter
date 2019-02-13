@@ -595,6 +595,10 @@ class UnicodeFilter
         return is_string($input) && isset(self::BLOCKS[$input]);
     }
 
+    private static function isRange($input) {
+        return is_array($input) && sizeof($input) == 2 && self::isCodePoint($input[0]) && self::isCodePoint($input[1]);
+    }
+
     private static function isCodePoint($input) {
         return is_numeric($input) && $input > 0x0 && $input <= 0x10FFFF;
     }
@@ -611,8 +615,12 @@ class UnicodeFilter
                 $from = dechex($range[0]);
                 $to = dechex($range[1]);
                 $patterns[] = "\\x{{$from}}-\\x{{$to}}";
+            } elseif (self::isRange($filter)) {
+                $from = dechex($filter[0]);
+                $to = dechex($filter[1]);
+                $patterns[] = "\\x{{$from}}-\\x{{$to}}";
             } else {
-                throw new \Exception("{$filter} block/codepoint not found");
+                throw new \Exception(json_encode($filter) . " block/codepoint not found");
             }
         }
 
