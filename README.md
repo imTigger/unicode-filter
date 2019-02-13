@@ -36,12 +36,16 @@ echo UnicodeFilter::blacklist("Hello World! 😃", [
 // Hello World! 
 ```
 
-
 - Return `true`/`false` if string is processed
 
 `UnicodeFilter::isWhitelistProcessed($input, $filters = [], $excepts = [])`
 
 `UnicodeFilter::isBlacklistProcessed($input, $filters = [], $excepts = [])`
+
+- `$filter` and `$excepts` can accept array of following formats
+  - Block Name (e.g. UnicodeFilter::BASIC_LATIN)
+  - Arbitary decimal codepoint (e.g. 0x200b, mb_ord("好"))
+  - Arbitary decimal codepoint range (e.g. [0x2000, 0x200F])
 
 ## Advanced Usage
 
