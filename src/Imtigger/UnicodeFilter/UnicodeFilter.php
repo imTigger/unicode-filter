@@ -643,30 +643,10 @@ class UnicodeFilter
         return preg_replace($patternString, '', $input);
     }
 
-    static function isProcessed($input, $filters = []) {
+    static function isWhitelistProcessed($input, $filters = []) {
         return !empty($input) && $input !== self::whitelist($input, $filters);
     }
-
-    static function info($input, $filters = [], $findBlock = false) {
-        $output = self::whitelist($input, $filters);
-        $dirtyCharacters = self::blacklist($input, $filters);
-        $isProcessed = self::isProcessed($input, $filters);
-
-        echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
-        echo "Output: {$output}" . ' (' . mb_strlen($output) . ')' . PHP_EOL;
-        echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
-        echo "Processed Characters: " . mb_strlen($dirtyCharacters) . PHP_EOL;
-        self::dumpString($dirtyCharacters, $findBlock);
-        echo PHP_EOL;
-    }
-
-    static function dumpString($string) {
-        for ($i = 0; $i < mb_strlen($string); $i += 1) {
-            $char = mb_substr($string, $i, 1);
-            echo $char . ' (U+' . dechex(mb_ord($char)) . ')' . (' in block ' . self::findBlock($char)) . PHP_EOL;
-        }
-    }
-
+    
     static function findBlock($char) {
         $codePoint = mb_ord($char);
 
@@ -678,12 +658,47 @@ class UnicodeFilter
 
         return self::UNKNOWN;
     }
+    
+    static function analysis($string) {
+        $output = [];
+        for ($i = 0; $i < mb_strlen($string); $i += 1) {
+            $char = mb_substr($string, $i, 1);
+            $output[] = [
+                'character' => $char,
+                'codepoint' => mb_ord($char),
+                'block' => self::findBlock($char)
+            ];
+        }
+        return $output;
+    }
+
+    static function whitelistInfo($input, $filters = []) {
+        $whitelisted = self::whitelist($input, $filters);
+        $blacklisted = self::blacklist($input, $filters);
+        $isProcessed = self::isWhitelistProcessed($input, $filters);
+
+        echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
+        echo "Output: {$whitelisted}" . ' (' . mb_strlen($whitelisted) . ')' . PHP_EOL;
+        echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
+        echo "Processed Characters: " . mb_strlen($blacklisted) . PHP_EOL;
+        self::dumpString($blacklisted);
+        echo PHP_EOL;
+    }
+
+    static function dumpString($string) {
+        $results = self::analysis($string);
+        foreach ($results as $result) {
+            echo $result['character'] . ' (U+' . dechex($result['codepoint']) . ')' . (' in block ' . $result['block']) . PHP_EOL;
+        }
+    }
 
     static function dumpFilters($filters = []) {
         foreach ($filters as $filter) {
             if (self::isBlock($filter)) {
                 $block = static::BLOCKS[$filter];
                 echo $filter . ' / U+' . dechex($block[0]) . '..' . 'U+' . dechex($block[1]) . PHP_EOL;
+            } elseif (self::isRange($filter)) {
+                echo 'U+' . dechex($filter[0]) . '..' . 'U+' . dechex($filter[1]) . PHP_EOL;
             } elseif (self::isCodePoint($filter)) {
                 echo mb_chr($filter) . ' / U+' . dechex($filter) . PHP_EOL;
             }
