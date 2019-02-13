@@ -1,5 +1,5 @@
 # Unicode Filter
-PHP Unicode string filter library base on [Unicode Blocks](http://ftp.unicode.org/Public/UNIDATA/Blocks.txt) defined by Unicode 11.0 standard
+PHP Unicode string filter library based on [Unicode Blocks](http://ftp.unicode.org/Public/UNIDATA/Blocks.txt) defined by Unicode 11.0 standard
 
 # Usage
 
