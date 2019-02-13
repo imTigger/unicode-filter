@@ -647,23 +647,31 @@ class UnicodeFilter
         }
     }
 
-    static function filter($mode, $input, $filters = [], $excepts = []) {
+    static function filter($mode, $input, $filters = [], $excepts = [], $replacement = '') {
         $patternString = self::getPatternString($mode, $filters, $excepts);
-        return preg_replace($patternString, '', $input);
+        return preg_replace($patternString, $replacement, $input);
     }
 
-    static function whitelist($input, $filters = [], $excepts = [])
+    static function whitelist($input, $filters = [], $excepts = [], $replacement = '')
     {
-        return self::filter(self::WHITELIST, $input, $filters, $excepts);
+        return self::filter(self::WHITELIST, $input, $filters, $excepts, $replacement);
     }
 
-    static function blacklist($input, $filters = [], $excepts = [])
+    static function blacklist($input, $filters = [], $excepts = [], $replacement = '')
     {
-        return self::filter(self::BLACKLIST, $input, $filters, $excepts);
+        return self::filter(self::BLACKLIST, $input, $filters, $excepts, $replacement);
     }
 
     static function isProcessed($mode, $input, $filters = [], $excepts = []) {
-        return !empty($input) && $input !== self::filter($mode == self::WHITELIST ? self::BLACKLIST : self::WHITELIST, $input, $filters, $excepts);
+        return !empty($input) && $input !== self::filter($mode, $input, $filters, $excepts);
+    }
+
+    static function isWhitelistProcessed($input, $filters = [], $excepts = []) {
+        return self::isProcessed(self::WHITELIST, $input, $filters, $excepts);
+    }
+
+    static function isBlacklistProcessed($input, $filters = [], $excepts = []) {
+        return self::isProcessed(self::BLACKLIST, $input, $filters, $excepts);
     }
     
     static function findBlock($char) {
@@ -691,16 +699,17 @@ class UnicodeFilter
         return $output;
     }
 
-    static function info($mode, $input, $filters = [], $excepts = []) {
+    static function info($mode, $input, $filters = [], $excepts = [], $replacement = '') {
         $whitelisted = self::whitelist($input, $filters, $excepts);
         $blacklisted = self::blacklist($input, $filters, $excepts);
+        $output = self::filter($mode, $input, $filters, $excepts, $replacement);
         $pattern = self::getPatternString($mode, $filters, $excepts);
         $processedCharacters = $mode == self::WHITELIST ? $blacklisted : $whitelisted;
         $isProcessed = self::isProcessed($mode, $input, $filters, $excepts);
 
         return [
             'input' => $input,
-            'output' => $mode == self::WHITELIST ? $whitelisted : $blacklisted,
+            'output' => $output,
             'pattern' => $pattern,
             'isProcessed' => $isProcessed,
             'processedCount' => mb_strlen($processedCharacters),
@@ -708,32 +717,32 @@ class UnicodeFilter
         ];
     }
 
-    static function whitelistInfo($input, $filters = [], $excepts = []) {
-        return self::info(self::WHITELIST, $input, $filters, $excepts);
+    static function whitelistInfo($input, $filters = [], $excepts = [], $replacement = '') {
+        return self::info(self::WHITELIST, $input, $filters, $excepts, $replacement);
     }
 
-    static function blacklistInfo($input, $filters = [], $excepts = []) {
-        return self::info(self::BLACKLIST, $input, $filters, $excepts);
+    static function blacklistInfo($input, $filters = [], $excepts = [], $replacement = '') {
+        return self::info(self::BLACKLIST, $input, $filters, $excepts, $replacement);
     }
 
-    static function dumpInfo($mode, $input, $filters = [], $excepts = []) {
-        $result = self::info($mode, $input, $filters, $excepts);
+    static function dumpInfo($mode, $input, $filters = [], $excepts = [], $replacement = '') {
+        $result = self::info($mode, $input, $filters, $excepts, $replacement);
 
         echo "Input:  {$result['input']}" . ' (' . mb_strlen($result['input']) . ')' . PHP_EOL;
         echo "Output: {$result['output']}" . ' (' . mb_strlen($result['output']) . ')' . PHP_EOL;
         echo "Pattern: {$result['pattern']}" . PHP_EOL;
-        echo "Processed: {$result['isProcessed']}" . PHP_EOL;
+        echo "Processed: " . ($result['isProcessed'] ? 'Yes' : 'No') . PHP_EOL;
         echo "Processed Characters: {$result['processedCount']}" . PHP_EOL;
         self::dumpString($result['processedCharacters']);
         echo PHP_EOL;
     }
 
-    static function dumpWhitelistInfo($input, $filters = [], $excepts = []) {
-        self::dumpInfo(self::WHITELIST, $input, $filters, $excepts);
+    static function dumpWhitelistInfo($input, $filters = [], $excepts = [], $replacement = '') {
+        self::dumpInfo(self::WHITELIST, $input, $filters, $excepts, $replacement);
     }
 
-    static function dumpBlacklistInfo($input, $filters = [], $excepts = []) {
-        self::dumpInfo(self::BLACKLIST, $input, $filters, $excepts);
+    static function dumpBlacklistInfo($input, $filters = [], $excepts = [], $replacement = '') {
+        self::dumpInfo(self::BLACKLIST, $input, $filters, $excepts, $replacement);
     }
 
     static function dumpString($string) {
