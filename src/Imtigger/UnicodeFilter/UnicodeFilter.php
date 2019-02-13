@@ -606,7 +606,7 @@ class UnicodeFilter
         return is_numeric($input) && $input > 0x0 && $input <= 0x10FFFF;
     }
 
-    static function getPatternString($filters = [], $excepts = [], $mode)
+    static function getPatternString($mode, $filters = [], $excepts = [])
     {
         $patterns = [];
         foreach ($filters as $filter) {
@@ -647,23 +647,23 @@ class UnicodeFilter
         }
     }
 
-    static function filter($input, $filters = [], $excepts = [], $mode) {
-        $patternString = self::getPatternString($filters, $excepts, $mode);
+    static function filter($mode, $input, $filters = [], $excepts = []) {
+        $patternString = self::getPatternString($mode, $filters, $excepts);
         return preg_replace($patternString, '', $input);
     }
 
     static function whitelist($input, $filters = [], $excepts = [])
     {
-        return self::filter($input, $filters, $excepts, self::WHITELIST);
+        return self::filter(self::WHITELIST, $input, $filters, $excepts);
     }
 
     static function blacklist($input, $filters = [], $excepts = [])
     {
-        return self::filter($input, $filters, $excepts, self::BLACKLIST);
+        return self::filter(self::BLACKLIST, $input, $filters, $excepts);
     }
 
-    static function isProcessed($input, $filters = [], $excepts = [], $mode = self::WHITELIST) {
-        return !empty($input) && $input !== self::filter($input, $filters, $excepts,  $mode == self::WHITELIST ? self::BLACKLIST : self::WHITELIST);
+    static function isProcessed($mode, $input, $filters = [], $excepts = []) {
+        return !empty($input) && $input !== self::filter($mode == self::WHITELIST ? self::BLACKLIST : self::WHITELIST, $input, $filters, $excepts);
     }
     
     static function findBlock($char) {
@@ -691,15 +691,15 @@ class UnicodeFilter
         return $output;
     }
 
-    static function info($input, $filters = [], $excepts = [], $mode = self::WHITELIST) {
+    static function info($mode, $input, $filters = [], $excepts = []) {
         $whitelisted = self::whitelist($input, $filters, $excepts);
         $blacklisted = self::blacklist($input, $filters, $excepts);
         $processed = $mode == self::WHITELIST ? $whitelisted : $blacklisted;
-        $isProcessed = self::isProcessed($input, $filters, $excepts, $mode);
+        $isProcessed = self::isProcessed($mode, $input, $filters, $excepts);
 
         echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
         echo "Output: {$processed}" . ' (' . mb_strlen($processed) . ')' . PHP_EOL;
-        echo "Pattern: " . self::getPatternString($filters, $excepts, $mode) . PHP_EOL;
+        echo "Pattern: " . self::getPatternString($mode, $filters, $excepts) . PHP_EOL;
         echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
         echo "Processed Characters: " . mb_strlen($mode == self::WHITELIST ? $blacklisted : $whitelisted) . PHP_EOL;
         self::dumpString($mode == self::WHITELIST ? $blacklisted : $whitelisted);
@@ -707,11 +707,11 @@ class UnicodeFilter
     }
 
     static function whitelistInfo($input, $filters = [], $excepts = []) {
-        self::info($input, $filters, $excepts, self::WHITELIST);
+        self::info(self::WHITELIST, $input, $filters, $excepts);
     }
 
     static function blacklistInfo($input, $filters = [], $excepts = []) {
-        self::info($input, $filters, $excepts, self::BLACKLIST);
+        self::info(self::BLACKLIST, $input, $filters, $excepts);
     }
 
     static function dumpString($string) {
