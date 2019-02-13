@@ -3,6 +3,9 @@ namespace Imtigger\UnicodeFilter;
 
 class UnicodeFilter
 {
+    const WHITELIST = 0;
+    const BLACKLIST = 1;
+    
     const BASIC_LATIN = "BASIC_LATIN";
     const LATIN_1_SUPPLEMENT = "LATIN_1_SUPPLEMENT";
     const LATIN_EXTENDED_A = "LATIN_EXTENDED_A";
@@ -643,7 +646,7 @@ class UnicodeFilter
         return preg_replace($patternString, '', $input);
     }
 
-    static function isWhitelistProcessed($input, $filters = []) {
+    static function isProcessed($input, $filters = [], $mode = self::WHITELIST) {
         return !empty($input) && $input !== self::whitelist($input, $filters);
     }
     
@@ -672,17 +675,25 @@ class UnicodeFilter
         return $output;
     }
 
-    static function whitelistInfo($input, $filters = []) {
+    static function info($input, $filters = [], $mode = self::WHITELIST) {
         $whitelisted = self::whitelist($input, $filters);
         $blacklisted = self::blacklist($input, $filters);
-        $isProcessed = self::isWhitelistProcessed($input, $filters);
+        $isProcessed = self::isProcessed($input, $filters, $mode);
 
         echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
         echo "Output: {$whitelisted}" . ' (' . mb_strlen($whitelisted) . ')' . PHP_EOL;
         echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
-        echo "Processed Characters: " . mb_strlen($blacklisted) . PHP_EOL;
-        self::dumpString($blacklisted);
+        echo "Processed Characters: " . mb_strlen($mode == self::WHITELIST ? $blacklisted : $whitelisted) . PHP_EOL;
+        self::dumpString($mode == self::WHITELIST ? $blacklisted : $whitelisted);
         echo PHP_EOL;
+    }
+
+    static function whitelistInfo($input, $filters = []) {
+        self::info($input, $filters, self::WHITELIST);
+    }
+
+    static function blacklistInfo($input, $filters = []) {
+        self::info($input, $filters, self::BLACKLIST);
     }
 
     static function dumpString($string) {
