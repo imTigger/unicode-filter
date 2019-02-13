@@ -694,24 +694,46 @@ class UnicodeFilter
     static function info($mode, $input, $filters = [], $excepts = []) {
         $whitelisted = self::whitelist($input, $filters, $excepts);
         $blacklisted = self::blacklist($input, $filters, $excepts);
-        $processed = $mode == self::WHITELIST ? $whitelisted : $blacklisted;
+        $pattern = self::getPatternString($mode, $filters, $excepts);
+        $processedCharacters = $mode == self::WHITELIST ? $blacklisted : $whitelisted;
         $isProcessed = self::isProcessed($mode, $input, $filters, $excepts);
 
-        echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
-        echo "Output: {$processed}" . ' (' . mb_strlen($processed) . ')' . PHP_EOL;
-        echo "Pattern: " . self::getPatternString($mode, $filters, $excepts) . PHP_EOL;
-        echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
-        echo "Processed Characters: " . mb_strlen($mode == self::WHITELIST ? $blacklisted : $whitelisted) . PHP_EOL;
-        self::dumpString($mode == self::WHITELIST ? $blacklisted : $whitelisted);
-        echo PHP_EOL;
+        return [
+            'input' => $input,
+            'output' => $mode == self::WHITELIST ? $whitelisted : $blacklisted,
+            'pattern' => $pattern,
+            'isProcessed' => $isProcessed,
+            'processedCount' => mb_strlen($processedCharacters),
+            'processedCharacters' => $processedCharacters,
+        ];
     }
 
     static function whitelistInfo($input, $filters = [], $excepts = []) {
-        self::info(self::WHITELIST, $input, $filters, $excepts);
+        return self::info(self::WHITELIST, $input, $filters, $excepts);
     }
 
     static function blacklistInfo($input, $filters = [], $excepts = []) {
-        self::info(self::BLACKLIST, $input, $filters, $excepts);
+        return self::info(self::BLACKLIST, $input, $filters, $excepts);
+    }
+
+    static function dumpInfo($mode, $input, $filters = [], $excepts = []) {
+        $result = self::info($mode, $input, $filters, $excepts);
+
+        echo "Input:  {$result['input']}" . ' (' . mb_strlen($result['input']) . ')' . PHP_EOL;
+        echo "Output: {$result['output']}" . ' (' . mb_strlen($result['output']) . ')' . PHP_EOL;
+        echo "Pattern: {$result['pattern']}" . PHP_EOL;
+        echo "Processed: {$result['isProcessed']}" . PHP_EOL;
+        echo "Processed Characters: {$result['processedCount']}" . PHP_EOL;
+        self::dumpString($result['processedCharacters']);
+        echo PHP_EOL;
+    }
+
+    static function dumpWhitelistInfo($input, $filters = [], $excepts = []) {
+        self::dumpInfo(self::WHITELIST, $input, $filters, $excepts);
+    }
+
+    static function dumpBlacklistInfo($input, $filters = [], $excepts = []) {
+        self::dumpInfo(self::BLACKLIST, $input, $filters, $excepts);
     }
 
     static function dumpString($string) {
