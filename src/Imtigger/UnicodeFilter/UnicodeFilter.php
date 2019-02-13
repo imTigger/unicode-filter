@@ -606,48 +606,64 @@ class UnicodeFilter
         return is_numeric($input) && $input > 0x0 && $input <= 0x10FFFF;
     }
 
-    static function getPatternString($filters = [], $reverse = false)
+    static function getPatternString($filters = [], $excepts = [], $mode)
     {
         $patterns = [];
         foreach ($filters as $filter) {
-            if (self::isCodePoint($filter)) {
-                $point = dechex($filter);
-                $patterns[] = "\\x{{$point}}";
-            } elseif (self::isBlock($filter)) {
-                $range = self::BLOCKS[$filter];
-                $from = dechex($range[0]);
-                $to = dechex($range[1]);
-                $patterns[] = "\\x{{$from}}-\\x{{$to}}";
-            } elseif (self::isRange($filter)) {
-                $from = dechex($filter[0]);
-                $to = dechex($filter[1]);
-                $patterns[] = "\\x{{$from}}-\\x{{$to}}";
-            } else {
-                throw new \Exception(json_encode($filter) . " block/codepoint not found");
+            $patterns[] = self::getPattern($filter);
+        }
+
+        $negativePatterns = [];
+        if (!empty($excepts)) {
+            foreach ($excepts as $except) {
+                $negativePatterns[] = self::getPattern($except);
             }
         }
 
-        if ($reverse) {
-            return '/[(' . implode("|", $patterns) . ')]/u';
-        } else {
-            return '/[^(' . implode("|", $patterns) . ')]/u';
+        if ($mode == self::BLACKLIST) {
+            // PCRE alternative to character class subtraction
+            return '/' . (!empty($negativePatterns) ? '(?![' . implode("", $negativePatterns) . '])' : '') . '[' . implode("", $patterns) . ']/u';
+        } else if ($mode == self::WHITELIST) {
+            // Simply alternation operator
+            return '/' .  '[^' . implode("", $patterns) . ']' . (!empty($negativePatterns) ? ('|[' . implode("", $negativePatterns) . ']') : '') . '/u';
         }
     }
 
-    static function whitelist($input, $filters = [])
-    {
-        $patternString = self::getPatternString($filters, false);
+    static function getPattern($filter) {
+        if (self::isCodePoint($filter)) {
+            $point = dechex($filter);
+            return "\\x{{$point}}";
+        } elseif (self::isBlock($filter)) {
+            $range = self::BLOCKS[$filter];
+            $from = dechex($range[0]);
+            $to = dechex($range[1]);
+            return "\\x{{$from}}-\\x{{$to}}";
+        } elseif (self::isRange($filter)) {
+            $from = dechex($filter[0]);
+            $to = dechex($filter[1]);
+            return "\\x{{$from}}-\\x{{$to}}";
+        } else {
+            throw new \Exception(json_encode($filter) . " block/codepoint not found");
+        }
+    }
+
+    static function filter($input, $filters = [], $excepts = [], $mode) {
+        $patternString = self::getPatternString($filters, $excepts, $mode);
         return preg_replace($patternString, '', $input);
     }
 
-    static function blacklist($input, $filters = [])
+    static function whitelist($input, $filters = [], $excepts = [])
     {
-        $patternString = self::getPatternString($filters, true);
-        return preg_replace($patternString, '', $input);
+        return self::filter($input, $filters, $excepts, self::WHITELIST);
     }
 
-    static function isProcessed($input, $filters = [], $mode = self::WHITELIST) {
-        return !empty($input) && $input !== self::whitelist($input, $filters);
+    static function blacklist($input, $filters = [], $excepts = [])
+    {
+        return self::filter($input, $filters, $excepts, self::BLACKLIST);
+    }
+
+    static function isProcessed($input, $filters = [], $excepts = [], $mode = self::WHITELIST) {
+        return !empty($input) && $input !== self::filter($input, $filters, $excepts,  $mode == self::WHITELIST ? self::BLACKLIST : self::WHITELIST);
     }
     
     static function findBlock($char) {
@@ -675,25 +691,27 @@ class UnicodeFilter
         return $output;
     }
 
-    static function info($input, $filters = [], $mode = self::WHITELIST) {
-        $whitelisted = self::whitelist($input, $filters);
-        $blacklisted = self::blacklist($input, $filters);
-        $isProcessed = self::isProcessed($input, $filters, $mode);
+    static function info($input, $filters = [], $excepts = [], $mode = self::WHITELIST) {
+        $whitelisted = self::whitelist($input, $filters, $excepts);
+        $blacklisted = self::blacklist($input, $filters, $excepts);
+        $processed = $mode == self::WHITELIST ? $whitelisted : $blacklisted;
+        $isProcessed = self::isProcessed($input, $filters, $excepts, $mode);
 
         echo "Input:  {$input}" . ' (' . mb_strlen($input) . ')' . PHP_EOL;
-        echo "Output: {$whitelisted}" . ' (' . mb_strlen($whitelisted) . ')' . PHP_EOL;
+        echo "Output: {$processed}" . ' (' . mb_strlen($processed) . ')' . PHP_EOL;
+        echo "Pattern: " . self::getPatternString($filters, $excepts, $mode) . PHP_EOL;
         echo "Processed: " . ($isProcessed ? 'Yes' : 'No') . PHP_EOL;
         echo "Processed Characters: " . mb_strlen($mode == self::WHITELIST ? $blacklisted : $whitelisted) . PHP_EOL;
         self::dumpString($mode == self::WHITELIST ? $blacklisted : $whitelisted);
         echo PHP_EOL;
     }
 
-    static function whitelistInfo($input, $filters = []) {
-        self::info($input, $filters, self::WHITELIST);
+    static function whitelistInfo($input, $filters = [], $excepts = []) {
+        self::info($input, $filters, $excepts, self::WHITELIST);
     }
 
-    static function blacklistInfo($input, $filters = []) {
-        self::info($input, $filters, self::BLACKLIST);
+    static function blacklistInfo($input, $filters = [], $excepts = []) {
+        self::info($input, $filters, $excepts, self::BLACKLIST);
     }
 
     static function dumpString($string) {
