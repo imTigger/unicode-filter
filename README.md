@@ -1,5 +1,5 @@
 # Unicode Filter
-PHP Unicode string filter library base on [Unicode Blocks](ftp://ftp.unicode.org/Public/UNIDATA/Blocks.txt) defined by Unicode 11.0 standard
+PHP Unicode string filter library base on [Unicode Blocks](http://ftp.unicode.org/Public/UNIDATA/Blocks.txt) defined by Unicode 11.0 standard
 
 # Usage
 
@@ -36,6 +36,13 @@ echo UnicodeFilter::blacklist("Hello World! 😃", [
 // Hello World! 
 ```
 
+
+- Return `true`/`false` if string is processed
+
+`UnicodeFilter::isWhitelistProcessed($input, $filters = [], $excepts = [])`
+
+`UnicodeFilter::isBlacklistProcessed($input, $filters = [], $excepts = [])`
+
 ## Advanced Usage
 
 - Allow most characters in English, Chinese, Japanese and Korean (Thai is not included so it's removed) 
@@ -53,7 +60,7 @@ echo UnicodeFilter::whitelist("Hello 您好 こんにちは 안녕하세요 ส�
 ```
 
 - Allow most characters in English, Chinese, Japanese, Korean, Thai and also [General Punctuation](https://www.compart.com/en/unicode/block/U+2000) 
-  finally in additional allow 😃 character
+  and in additional allow 😃 character
   but not allow characters in range U+2000..U+200F and U+205F..U+206F (Unprintable characters)
   replace other characters as underscore
 ```php
@@ -73,6 +80,48 @@ echo UnicodeFilter::whitelist("‷Hello×您好×こんにちは×안녕하세�
 ], "?");
 
 // ‷Hello_您好_こんにちは_안녕하세요_สวัสดีค่ะ‴ 😃
+```
+
+- Generate analysis of each characters' codepoint and block
+
+`analysis($string)`
+
+```
+array(14) {
+  [0]=>
+  array(3) {
+    ["character"]=>
+    string(1) "H"
+    ["codepoint"]=>
+    int(72)
+    ["block"]=>
+    string(11) "BASIC_LATIN"
+  }
+  ...
+}
+```
+
+- Generate info of how whitelist/blacklist is executed and it's results
+
+`whitelistInfo($input, $filters = [], $excepts = [])`
+
+`blacklistInfo($input, $filters = [], $excepts = [])`
+
+```
+array(6) {
+  ["input"]=>
+  string(12) "Hello 您好"
+  ["output"]=>
+  string(6) "Hello "
+  ["pattern"]=>
+  string(18) "/[^\x{0}-\x{7f}]/u"
+  ["isProcessed"]=>
+  bool(true)
+  ["processedCount"]=>
+  int(2)
+  ["processedCharacters"]=>
+  string(6) "您好"
+}
 ```
 
 ## Debug Functions
@@ -139,6 +188,16 @@ LATIN_EXTENDED_A / U+100..U+17f
 LATIN_EXTENDED_B / U+180..U+24f
 ```
 
+## Common Issues
+
+- Whitelist is more preferred way to work with, because there are too many characters (137,374 characters as of Unicode 11.0)
+
+- Some language, especailly Chinese and sorth-east asia language have characters spread over multiple blocks
+  For example there are CJK_COMPATIBILITY, CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A, CJK_UNIFIED_IDEOGRAPHS, CJK_COMPATIBILITY_IDEOGRAPHS... blocks
+  Multiple tests needed to include all blocks you may actually need
+  
+
 ## Reference
 
+- https://unicode.org/
 - https://www.compart.com/en/unicode/block
