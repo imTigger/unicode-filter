@@ -166,9 +166,7 @@ Processed Characters: 2
 `dumpString($string)`
 
 ```php
-echo UnicodeFilter::dumpString("Hello×您好×こんにちは", [
-    UnicodeFilter::BASIC_LATIN
-]);
+echo UnicodeFilter::dumpString("Hello×您好×こんにちは");
 ```
 
 ```
